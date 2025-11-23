@@ -1,0 +1,481 @@
+:root {
+    /* Colors - Light Theme */
+    --bg-color: #f8f9fa;
+    --panel-bg: #ffffff;
+    --text-color: #212529;
+    --border-color: #dee2e6;
+
+    --primary-color: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --secondary-color: #6c757d;
+    --secondary-hover: #5c636a;
+    --danger-color: #dc3545;
+    --danger-hover: #bb2d3b;
+
+    /* State Colors (Tinted backgrounds) */
+    --state-idle-bg: var(--bg-color);
+    --state-prep-bg: #dc3545;
+    /* Match danger color (Warning Red) */
+    --state-shoot-bg: #198754;
+    /* Strong Green for Light Mode too */
+    --state-shoot-bg-active: #157347;
+    --state-between-bg: var(--bg-color);
+    /* Match theme background */
+    --state-finished-bg: #e2e3e5;
+
+    /* Timer Colors */
+    --timer-color-normal: inherit;
+    --timer-color-warning: #dc3545;
+
+    /* Spacing */
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 2rem;
+}
+
+body.theme-dark {
+    --bg-color: #212529;
+    --panel-bg: #343a40;
+    --text-color: #f8f9fa;
+    --border-color: #495057;
+
+    --state-idle-bg: #212529;
+    --state-prep-bg: #dc3545;
+    /* Match danger color */
+    --state-shoot-bg: #198754;
+    /* Match Light Mode Green (Unified) */
+    --state-between-bg: #212529;
+    /* Match theme background */
+    --state-finished-bg: #1a1e21;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    height: 100vh;
+    overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#app-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+/* Config Panel */
+#config-panel {
+    width: 350px;
+    background-color: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+#config-panel.hidden {
+    transform: translateX(-100%);
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: var(--spacing-md);
+}
+
+h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+input[type="number"],
+select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.checkbox-group label {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+/* Timer Display */
+#timer-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-color: var(--state-idle-bg);
+    transition: background-color 0.3s;
+    padding: var(--spacing-lg);
+}
+
+/* State Backgrounds */
+body[data-state="prep"] #timer-display {
+    background-color: var(--state-prep-bg);
+    color: white;
+    /* Ensure text is white on red background */
+}
+
+body[data-state="shoot"] #timer-display {
+    background-color: var(--state-shoot-bg);
+    color: white;
+    /* Ensure text is white on green background */
+}
+
+body[data-state="between"] #timer-display {
+    background-color: var(--state-between-bg);
+}
+
+body[data-state="finished"] #timer-display {
+    background-color: var(--state-finished-bg);
+}
+
+.status-bar {
+    position: absolute;
+    top: var(--spacing-md);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    font-size: 1rem;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.big-labels {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    top: var(--spacing-lg);
+    padding: 0 var(--spacing-lg);
+    font-size: 3vw;
+    /* Responsive font size */
+    font-weight: 800;
+}
+
+.line-name-large {
+    display: block;
+    font-size: 1.5em;
+    /* 50% larger */
+    line-height: 1.2;
+}
+
+#timer-digits {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: min(30vw, 55vh);
+    /* Massive timer, constrained by width or height */
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+/* Warning Flash */
+@keyframes flash {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.warning #timer-digits {
+    /* color: var(--timer-color-warning); Removed as per request */
+    animation: flash 1s infinite;
+}
+
+/* Stats Display */
+#stats-display {
+    margin-top: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    opacity: 0.9;
+}
+
+#stats-display.hidden {
+    display: none;
+}
+
+.stat-row {
+    display: flex;
+    gap: var(--spacing-lg);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.stat-row-small {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+}
+
+/* Apply warning background to timer display specifically to override state colors */
+body.warning #timer-display {
+    background-color: var(--danger-color) !important;
+    /* Ensure text is readable on red background */
+    color: white;
+}
+
+/* Controls */
+.panel-controls {
+    margin-top: auto;
+}
+
+#running-controls {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: 1.5rem;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    /* Allow wrapping */
+    pointer-events: none;
+    /* Let clicks pass through container */
+}
+
+#reset-btn {
+    margin-left: auto;
+}
+
+#running-controls button {
+    pointer-events: auto;
+    /* Re-enable clicks on buttons */
+}
+
+#running-controls.hidden {
+    display: none;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    /* Restore padding */
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    position: relative;
+    /* Anchor for absolute hotkey */
+    /* Remove flex column layout since hotkey is absolute */
+    line-height: 1.2;
+}
+
+.hotkey {
+    position: absolute;
+    top: -1.2rem;
+    /* Float above */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    color: var(--text-color);
+    /* Ensure visibility outside button */
+    pointer-events: none;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--secondary-hover);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: var(--danger-hover);
+}
+
+/* Modal */
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--panel-bg);
+    padding: var(--spacing-lg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-bottom: var(--spacing-md);
+    font-size: 1.25rem;
+}
+
+.modal-content p {
+    margin-bottom: var(--spacing-lg);
+    color: var(--secondary-color);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #app-container {
+        flex-direction: column;
+    }
+
+    #config-panel {
+        width: 100%;
+        height: 50%;
+        /* Take up half screen initially on mobile? Or maybe just overlay/scroll */
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    #config-panel.hidden {
+        height: 0;
+        transform: translateY(-100%);
+    }
+
+    .big-labels {
+        font-size: 1.5rem;
+    }
+
+    /* Mobile: Make controls relative so they flow and don't get cut off */
+    #running-controls {
+        position: absolute;
+        /* Anchor to bottom */
+        bottom: var(--spacing-md);
+        margin-top: 0;
+        padding-bottom: 0;
+        background-color: transparent;
+        /* Ensure it sits on top if needed, though pointer-events handles clicks */
+    }
+
+    /* Remove auto margin from reset button on mobile to center it */
+    #reset-btn {
+        margin-left: 0;
+    }
+
+    /* Allow body to scroll on mobile if needed */
+    body {
+        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    #app-container {
+        height: auto;
+        min-height: 100vh;
+    }
+
+    #timer-display {
+        min-height: 100dvh;
+        /* Fill viewport height */
+        justify-content: center;
+        /* Center vertically */
+    }
+}

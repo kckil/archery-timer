@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archery Timer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="theme-light">
+    <div id="app-container">
+        <!-- Configuration Panel -->
+        <aside id="config-panel">
+            <h1>Archery Timer</h1>
+
+            <div class="config-group">
+                <h2>Round Settings</h2>
+                <label>
+                    Preset
+                    <select id="preset-select">
+                        <option value="custom">Custom</option>
+                        <option value="usa18m">USA Indoor 18m</option>
+                        <option value="usaOutdoor">USA Outdoor</option>
+                    </select>
+                </label>
+                <label>
+                    Shooting Lines
+                    <select id="lines-select">
+                        <option value="1">Single Line</option>
+                        <option value="2">Two Lines (AB/CD)</option>
+                    </select>
+                </label>
+                <label>
+                    Scoring Ends
+                    <input type="number" id="ends-input" min="1" value="20">
+                </label>
+                <label>
+                    Practice Ends
+                    <input type="number" id="practice-ends-input" min="0" value="2">
+                </label>
+            </div>
+
+            <div class="config-group">
+                <h2>Timing (Seconds)</h2>
+                <label>
+                    Prep Time
+                    <input type="number" id="time-prep-input" min="0" value="10">
+                </label>
+                <label>
+                    Shooting Time
+                    <input type="number" id="time-shoot-input" min="10" value="120">
+                </label>
+                <label>
+                    Warning Threshold
+                    <input type="number" id="warning-threshold-input" min="0" value="30">
+                </label>
+            </div>
+
+            <div class="config-group">
+                <h2>Audio & Display</h2>
+                <div class="form-group checkbox-group">
+                    <label>Audio Cues:</label>
+                    <div class="checkbox-row">
+                        <label><input type="checkbox" id="beep-prep-check" checked> Prep</label>
+                        <label><input type="checkbox" id="beep-shoot-check" checked> Shoot</label>
+                        <label><input type="checkbox" id="beep-end-check" checked> End</label>
+                    </div>
+                </div>
+                <label>
+                    Theme
+                    <select id="theme-select">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="panel-controls">
+                <button id="start-btn-panel" class="btn-primary">Start Round</button>
+            </div>
+        </aside>
+
+        <!-- Main Timer Display -->
+        <main id="timer-display">
+            <!-- Status Bar Removed -->
+
+            <div class="big-labels">
+                <div id="big-line">Line A</div>
+                <div id="big-end">Ready</div>
+            </div>
+
+            <div id="timer-digits">000</div>
+
+            <!-- Timing Statistics (Visible in Between state) -->
+            <div id="stats-display" class="hidden">
+                <div class="stat-row">
+                    <span id="stat-last-end">Last End: --:--</span>
+                    <span id="stat-avg-end">Avg End: --:--</span>
+                </div>
+                <div class="stat-row">
+                    <span id="stat-total-duration">Total: --:--</span>
+                    <span id="stat-est-finish">Est Finish: --:--</span>
+                </div>
+                <div class="stat-row-small">
+                    <span id="stat-started-at">Started at: --:--</span>
+                </div>
+            </div>
+
+            <!-- Running Controls (Hidden in Idle) -->
+            <div id="running-controls" class="hidden">
+                <button id="pause-btn" class="btn-secondary">
+                    <span class="hotkey">D</span>
+                    <span class="btn-label">Pause</span>
+                </button>
+                <button id="finish-now-btn" class="btn-secondary">
+                    <span class="hotkey">F</span>
+                    <span class="btn-label">Finish Now</span>
+                </button>
+                <button id="next-btn" class="btn-primary" disabled>
+                    <span class="hotkey">Space</span>
+                    <span class="btn-label">Next Line/End</span>
+                </button>
+                <button id="restart-end-btn" class="btn-secondary">
+                    <span class="hotkey">J</span>
+                    <span class="btn-label">Restart Current End</span>
+                </button>
+                <button id="reset-btn" class="btn-secondary">
+                    <span class="hotkey">K</span>
+                    <span class="btn-label">Reset All</span>
+                </button>
+            </div>
+
+            <!-- Idle Controls Removed -->
+
+        </main>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="hidden">
+        <div class="modal-content">
+            <h3>Reset Round?</h3>
+            <p>Are you sure? This will restart the entire round and go back to options.</p>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="btn-secondary">Cancel</button>
+                <button id="modal-confirm" class="btn-danger">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
