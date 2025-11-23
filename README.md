@@ -54,6 +54,10 @@ Toggle the theme in the configuration panel to test both.
 All settings are saved in the URL query string. This allows users to bookmark their specific setup (e.g., "Indoor 18m, 2 Lines").
 *   When adding new config options, ensure they are added to `loadConfigFromURL` and `updateURL` in `script.js`.
 
+## Acknowledgments
+
+This timer was written for [Sky Valley Archery Academy (Ed Eliason JOAD)](https://skyvalleyarcheryacademy.wordpress.com/) in Monroe, WA.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -59,7 +59,8 @@ body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    height: 100vh;
+    height: 100dvh;
+    /* Use dynamic viewport height for mobile */
     overflow: hidden;
     transition: background-color 0.3s, color 0.3s;
 }
@@ -280,20 +281,37 @@ body.warning #timer-display {
 /* Controls */
 .panel-controls {
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.info-link {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.info-link:hover {
+    opacity: 1;
+    text-decoration: underline;
 }
 
 #running-controls {
-    position: absolute;
-    bottom: var(--spacing-lg);
     display: flex;
     gap: var(--spacing-md);
-    margin-top: 1.5rem;
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
     /* Allow wrapping */
     pointer-events: none;
     /* Let clicks pass through container */
+    margin-top: auto;
+    /* Push to bottom in flex container */
+    padding-bottom: var(--spacing-lg);
 }
 
 #reset-btn {
@@ -428,31 +446,36 @@ button:disabled {
     }
 
     #config-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: 50%;
-        /* Take up half screen initially on mobile? Or maybe just overlay/scroll */
+        height: 100%;
+        z-index: 50;
         border-right: none;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: none;
     }
 
     #config-panel.hidden {
-        height: 0;
         transform: translateY(-100%);
+        height: 0;
+        overflow: hidden;
     }
 
     .big-labels {
         font-size: 1.5rem;
+        position: relative;
+        /* Flow naturally */
+        top: auto;
+        margin-bottom: var(--spacing-md);
     }
 
-    /* Mobile: Make controls relative so they flow and don't get cut off */
+    /* Mobile: Make controls flow naturally */
     #running-controls {
-        position: absolute;
-        /* Anchor to bottom */
-        bottom: var(--spacing-md);
-        margin-top: 0;
+        position: relative;
+        bottom: auto;
         padding-bottom: 0;
         background-color: transparent;
-        /* Ensure it sits on top if needed, though pointer-events handles clicks */
     }
 
     /* Remove auto margin from reset button on mobile to center it */
@@ -460,22 +483,28 @@ button:disabled {
         margin-left: 0;
     }
 
-    /* Allow body to scroll on mobile if needed */
+    /* Prevent body scroll on mobile */
     body {
-        overflow-y: auto;
-        height: auto;
-        min-height: 100vh;
+        overflow: hidden;
+        height: 100dvh;
     }
 
     #app-container {
-        height: auto;
-        min-height: 100vh;
+        height: 100dvh;
     }
 
     #timer-display {
-        min-height: 100dvh;
+        height: 100dvh;
         /* Fill viewport height */
-        justify-content: center;
+        justify-content: space-between;
+        /* Distribute space */
+        padding: var(--spacing-md);
+    }
+
+    #timer-digits {
+        font-size: 25vh;
+        /* Adjust for mobile height */
+        margin: auto 0;
         /* Center vertically */
     }
 }
