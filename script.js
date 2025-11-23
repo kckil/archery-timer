@@ -14,7 +14,7 @@ const DEFAULTS = {
     beepPrep: true,
     beepShoot: true,
     beepEnd: true,
-    theme: 'light'
+    theme: 'dark'
 };
 
 const PRESETS = {
@@ -456,9 +456,9 @@ function playSound(type) {
     if (type === 'end' && !c.beepEnd) return;
 
     if (type === 'prep') {
-        playBuzzerSignal(1);
-    } else if (type === 'shoot') {
         playBuzzerSignal(2);
+    } else if (type === 'shoot') {
+        playBuzzerSignal(1);
     } else if (type === 'end') {
         playBuzzerSignal(3);
     }

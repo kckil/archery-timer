@@ -199,6 +199,9 @@ body[data-state="finished"] #timer-display {
     justify-content: space-between;
     position: absolute;
     top: var(--spacing-lg);
+    /* position: absolute; Removed to fix layout flow */
+    /* top: var(--spacing-lg); Removed */
+    /* margin-top: auto; Removed */
     padding: 0 var(--spacing-lg);
     font-size: 3vw;
     /* Responsive font size */
@@ -214,12 +217,13 @@ body[data-state="finished"] #timer-display {
 
 #timer-digits {
     font-family: 'JetBrains Mono', monospace;
-    font-size: min(30vw, 55vh);
+    font-size: min(30vw, 40vh);
     /* Massive timer, constrained by width or height */
     font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;
     user-select: none;
+    margin: auto;
 }
 
 /* Warning Flash */
@@ -314,9 +318,7 @@ body.warning #timer-display {
     padding-bottom: var(--spacing-lg);
 }
 
-#reset-btn {
-    margin-left: auto;
-}
+
 
 #running-controls button {
     pointer-events: auto;
