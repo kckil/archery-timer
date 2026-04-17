@@ -233,7 +233,7 @@ body[data-state="between"] #timer-digits {
 
 .end-number-large {
     display: block;
-    font-size: 4em;
+    font-size: 3em;
     line-height: 1.1;
 }
 
