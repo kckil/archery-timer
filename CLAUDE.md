@@ -31,6 +31,22 @@ Three breakpoints in `style.css`:
 - `#big-end` is right-aligned (`text-align: right`)
 - Hotkey labels (`.hotkey`) are hidden on both mobile breakpoints — keyboard shortcuts are irrelevant on touch devices
 
+## Label/timer opacity by state
+
+The side labels (`.big-labels`) and timer digits (`#timer-digits`) swap prominence based on state:
+
+- **Active** (`prep`/`shoot`): side labels dim, timer stays full brightness
+- **Stopped** (`between`): side labels go bright white, timer dims
+
+Controlled by two CSS variables in `:root` (top of `style.css`):
+
+```css
+--label-dim-opacity: 0.45;   /* how dim labels get during active states */
+--timer-dim-opacity: 0.3;    /* how dim the timer gets during between state */
+```
+
+The rules that apply them are just below the state background rules in `style.css` (search for `/* Active states: dim the side labels */`).
+
 ## Key functions in script.js
 
 - `enterState(newState)` — state transitions, starts/stops timer

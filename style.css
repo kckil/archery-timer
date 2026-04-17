@@ -27,6 +27,10 @@
     --timer-color-normal: inherit;
     --timer-color-warning: #dc3545;
 
+    /* Label/timer opacity during state transitions */
+    --label-dim-opacity: 0.45;
+    --timer-dim-opacity: 0.3;
+
     /* Spacing */
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
@@ -177,6 +181,21 @@ body[data-state="between"] #timer-display {
 
 body[data-state="finished"] #timer-display {
     background-color: var(--state-finished-bg);
+}
+
+/* Active states: dim the side labels, timer stays full */
+body[data-state="prep"] .big-labels,
+body[data-state="shoot"] .big-labels {
+    opacity: var(--label-dim-opacity);
+}
+
+/* Between state: bright white labels, dim the timer */
+body[data-state="between"] .big-labels {
+    color: white;
+}
+
+body[data-state="between"] #timer-digits {
+    opacity: var(--timer-dim-opacity);
 }
 
 .status-bar {

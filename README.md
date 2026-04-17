@@ -11,6 +11,16 @@ This is a static web application with no build step or backend dependencies.
 
 That's it! You can run it locally or host it on any static site provider (GitHub Pages, Netlify, Vercel, etc.).
 
+### Running a local development server
+
+Some browser features (e.g. Web Audio) work more reliably over HTTP than via `file://`. To serve the app locally:
+
+```bash
+python3 -m http.server 8765
+```
+
+Then open `http://localhost:8765` in your browser.
+
 ## 📂 Project Structure
 
 *   **`index.html`**: The main entry point. Contains the HTML structure for the timer display, configuration panel, and controls.

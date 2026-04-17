@@ -549,10 +549,10 @@ function render() {
             endLabel = `Last: <span class="end-number-large">${endNum}/${total}</span><br>${nextLabel}`;
         } else {
             // Between lines (AB -> CD)
-            endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum} / ${total}</span>`;
+            endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
         }
     } else {
-        endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum} / ${total}</span>`;
+        endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
     }
 
     els.bigEnd.innerHTML = endLabel;
