@@ -208,10 +208,19 @@ body[data-state="finished"] #timer-display {
     font-weight: 800;
 }
 
+#big-end {
+    text-align: right;
+}
+
+.end-number-large {
+    display: block;
+    font-size: 4em;
+    line-height: 1.1;
+}
+
 .line-name-large {
     display: block;
-    font-size: 1.5em;
-    /* 50% larger */
+    font-size: 4.0em;
     line-height: 1.2;
 }
 
@@ -467,9 +476,13 @@ button:disabled {
     .big-labels {
         font-size: 1.5rem;
         position: relative;
-        /* Flow naturally */
         top: auto;
         margin-bottom: var(--spacing-md);
+    }
+
+    .end-number-large {
+        font-size: 1em;
+        display: inline;
     }
 
     /* Mobile: Make controls flow naturally */
@@ -497,16 +510,75 @@ button:disabled {
 
     #timer-display {
         height: 100dvh;
-        /* Fill viewport height */
         justify-content: space-between;
-        /* Distribute space */
         padding: var(--spacing-md);
     }
 
     #timer-digits {
         font-size: 25vh;
-        /* Adjust for mobile height */
         margin: auto 0;
-        /* Center vertically */
+    }
+
+    /* Hide keyboard hotkey hints on touch devices */
+    .hotkey {
+        display: none;
+    }
+}
+
+/* Phone landscape: everything squishes into ~430px height */
+@media (max-width: 1000px) and (orientation: landscape) {
+    #timer-display {
+        justify-content: flex-start;
+        gap: 0;
+        padding: 0.4rem var(--spacing-md);
+    }
+
+    .big-labels {
+        font-size: 1rem;
+        margin-bottom: 0;
+        padding: 0 var(--spacing-md);
+    }
+
+    #timer-digits {
+        font-size: min(35vw, 55vh);
+        margin: auto 0;
+    }
+
+    /* Hide keyboard hotkey hints on touch/mobile */
+    .hotkey {
+        display: none;
+    }
+
+    #running-controls {
+        gap: 0.4rem;
+        padding-bottom: 0.4rem;
+        margin-top: auto;
+    }
+
+    #running-controls button {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .stat-row {
+        font-size: 0.8rem;
+        gap: var(--spacing-md);
+    }
+
+    .stat-row-small {
+        font-size: 0.7rem;
+    }
+
+    #stats-display {
+        gap: 0.15rem;
+        margin-top: 0;
+    }
+}
+
+/* iPad: narrow the sidebar slightly on medium-width tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #config-panel {
+        width: 280px;
+        padding: var(--spacing-md);
     }
 }

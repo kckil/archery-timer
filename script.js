@@ -540,19 +540,19 @@ function render() {
                 const nextTotal = isNextPractice ? state.config.practiceEnds : state.config.ends;
                 // User request: Remove "End" from "Next: End X/Y". Keep "Practice" if practice.
                 const nextType = isNextPractice ? "Practice " : "";
-                nextLabel = `Next: ${nextType}${nextIndex}/${nextTotal}`;
+                nextLabel = `Next: ${nextType}<span class="end-number-large">${nextIndex}/${nextTotal}</span>`;
             } else {
                 nextLabel = "Next: Finish";
             }
 
             // Line break for large display
-            endLabel = `Last: ${endNum}/${total}<br>${nextLabel}`;
+            endLabel = `Last: <span class="end-number-large">${endNum}/${total}</span><br>${nextLabel}`;
         } else {
             // Between lines (AB -> CD)
-            endLabel = `${isPractice ? 'Practice' : 'End'} ${endNum} / ${total}`;
+            endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum} / ${total}</span>`;
         }
     } else {
-        endLabel = `${isPractice ? 'Practice' : 'End'} ${endNum} / ${total}`;
+        endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum} / ${total}</span>`;
     }
 
     els.bigEnd.innerHTML = endLabel;
