@@ -14,7 +14,8 @@ const DEFAULTS = {
     beepPrep: true,
     beepShoot: true,
     beepEnd: true,
-    theme: 'dark'
+    theme: 'dark',
+    timeFormat: 'seconds'
 };
 
 const PRESETS = {
@@ -94,7 +95,8 @@ function init() {
         beepEnd: document.getElementById('beep-end-check'),
         beepShoot: document.getElementById('beep-shoot-check'),
         beepEnd: document.getElementById('beep-end-check'),
-        theme: document.getElementById('theme-select')
+        theme: document.getElementById('theme-select'),
+        timeFormat: document.getElementById('time-format-select')
     };
 
     // Buttons
@@ -103,7 +105,8 @@ function init() {
         pause: document.getElementById('pause-btn'),
         finishNow: document.getElementById('finish-now-btn'),
         next: document.getElementById('next-btn'),
-        reset: document.getElementById('reset-btn') // If we add one
+        reset: document.getElementById('reset-btn'), // If we add one
+        timeFormat: document.getElementById('time-format-btn')
     };
 
     // Bind Events
@@ -132,6 +135,7 @@ function bindEvents() {
     els.btns.restartEnd.addEventListener('click', () => restartEnd());
     els.btns.reset = document.getElementById('reset-btn');
     els.btns.reset.addEventListener('click', () => confirmReset());
+    els.btns.timeFormat.addEventListener('click', () => toggleTimeFormat());
 
     // Modal
     els.modal = {
@@ -188,6 +192,7 @@ function handleConfigChange(e) {
         i.beepPrep.checked = cc.beepPrep;
         i.beepShoot.checked = cc.beepShoot;
         i.beepEnd.checked = cc.beepEnd;
+        i.timeFormat.value = cc.timeFormat;
     }
 
     // Update Config State
@@ -204,6 +209,7 @@ function handleConfigChange(e) {
     c.beepShoot = i.beepShoot.checked;
     c.beepEnd = i.beepEnd.checked;
     c.theme = i.theme.value;
+    c.timeFormat = i.timeFormat.value;
 
     // If we are in custom mode, update customConfig
     if (c.preset === 'custom') {
@@ -212,6 +218,17 @@ function handleConfigChange(e) {
 
     updateURL();
     renderTheme();
+    renderTimer();
+}
+
+function toggleTimeFormat() {
+    state.config.timeFormat = state.config.timeFormat === 'mmss' ? 'seconds' : 'mmss';
+    els.inputs.timeFormat.value = state.config.timeFormat;
+    if (state.config.preset === 'custom') {
+        state.customConfig.timeFormat = state.config.timeFormat;
+    }
+    updateURL();
+    renderTimer();
 }
 
 function loadConfigFromURL() {
@@ -229,6 +246,7 @@ function loadConfigFromURL() {
     if (params.has('beepShoot')) c.beepShoot = params.get('beepShoot') === 'true';
     if (params.has('beepEnd')) c.beepEnd = params.get('beepEnd') === 'true';
     if (params.has('theme')) c.theme = params.get('theme');
+    if (params.has('timeFormat')) c.timeFormat = params.get('timeFormat');
 
     // Sync UI
     const i = els.inputs;
@@ -245,6 +263,7 @@ function loadConfigFromURL() {
     i.beepShoot.checked = c.beepShoot;
     i.beepEnd.checked = c.beepEnd;
     i.theme.value = c.theme;
+    i.timeFormat.value = c.timeFormat;
 
     renderTheme();
 }
@@ -665,9 +684,18 @@ function formatTimeOfDay(date) {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+function formatTimerDisplay(totalSeconds) {
+    if (state.config.timeFormat === 'mmss') {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return `${m}<span class="timer-colon">:</span>${String(s).padStart(2, '0')}`;
+    }
+    return String(totalSeconds);
+}
+
 function renderTimer() {
     const seconds = Math.ceil(state.remainingMs / 1000);
-    els.timerDigits.textContent = seconds;
+    els.timerDigits.innerHTML = formatTimerDisplay(seconds);
 
     // Warning style
     if (state.status === STATE.SHOOT && seconds <= state.config.warningThreshold && seconds > 0) {
@@ -708,6 +736,11 @@ function handleKeydown(e) {
     // k for "reset all"
     if (key === 'k') {
         confirmReset();
+    }
+
+    // t for "toggle time format"
+    if (key === 't') {
+        toggleTimeFormat();
     }
 }
 

@@ -189,9 +189,9 @@ body[data-state="shoot"] .big-labels {
     opacity: var(--label-dim-opacity);
 }
 
-/* Between state: bright white labels, dim the timer */
+/* Between state: full-contrast labels (theme text color, not hardcoded white), dim the timer */
 body[data-state="between"] .big-labels {
-    color: white;
+    color: var(--text-color);
 }
 
 body[data-state="between"] #timer-digits {
@@ -252,6 +252,11 @@ body[data-state="between"] #timer-digits {
     font-variant-numeric: tabular-nums;
     user-select: none;
     margin: auto;
+}
+
+.timer-colon {
+    display: inline-block;
+    margin: 0 -0.18em;
 }
 
 /* Warning Flash */

@@ -79,6 +79,13 @@
                         <option value="dark">Dark</option>
                     </select>
                 </label>
+                <label>
+                    Timer Format
+                    <select id="time-format-select">
+                        <option value="seconds">Seconds</option>
+                        <option value="mmss">MM:SS</option>
+                    </select>
+                </label>
             </div>
 
             <div class="panel-controls">
@@ -130,6 +137,10 @@
                 <button id="restart-end-btn" class="btn-secondary">
                     <span class="hotkey">J</span>
                     <span class="btn-label">Restart Current End</span>
+                </button>
+                <button id="time-format-btn" class="btn-secondary">
+                    <span class="hotkey">T</span>
+                    <span class="btn-label">Format</span>
                 </button>
                 <button id="reset-btn" class="btn-secondary">
                     <span class="hotkey">K</span>
