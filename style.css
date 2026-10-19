@@ -332,6 +332,12 @@ body.warning #timer-display {
     transition: opacity 0.2s;
 }
 
+#offline-status {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    text-align: center;
+}
+
 .info-link:hover {
     opacity: 1;
     text-decoration: underline;

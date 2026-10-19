@@ -21,6 +21,27 @@ python3 -m http.server 8765
 
 Then open `http://localhost:8765` in your browser.
 
+### Offline use and home-screen installation
+
+Open the app online over HTTPS (or localhost) and wait for **Ready for offline use**
+below Start Round. The complete app is then cached for reopening without internet,
+including bookmarked URLs with custom timer settings. Fonts use local system
+fallbacks, so the timer has no external font dependency.
+
+On Android, use the browser's **Install app** or **Add to Home screen** option.
+On iPhone or iPad, open in Safari and use **Share > Add to Home Screen**.
+Installation is optional for offline use. Browser data clearing, storage eviction,
+or private browsing can remove cached files; check offline readiness before leaving
+connectivity and try reopening in airplane mode.
+
+Updates download in the background without reloading a running timer. When an
+update is ready, close all app tabs/windows and reopen to apply it.
+
+When deploying changes to any app file, increment `CACHE_NAME`'s version in `sw.js`.
+Keep all required files in its precache list. Paths are relative, so root hosting
+and GitHub Pages project subdirectories are supported. Offline support requires
+HTTP on localhost or HTTPS elsewhere; opening `index.html` directly is not enough.
+
 ## 📂 Project Structure
 
 *   **`index.html`**: The main entry point. Contains the HTML structure for the timer display, configuration panel, and controls.
