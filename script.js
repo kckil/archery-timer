@@ -390,8 +390,8 @@ function togglePause() {
     render();
 }
 
-function getFirstLine() {
-    return state.config.lines === 2 && state.config.alternateLines && state.currentEnd % 2 === 0 ? 2 : 1;
+function getFirstLine(end = state.currentEnd) {
+    return state.config.lines === 2 && state.config.alternateLines && end % 2 === 0 ? 2 : 1;
 }
 
 function nextSegment() {
@@ -552,6 +552,12 @@ function render() {
     const endNum = isPractice ? state.currentEnd : (state.currentEnd - state.config.practiceEnds);
     const total = isPractice ? state.config.practiceEnds : state.config.ends;
 
+    let lineLabel = "Single Line";
+    if (state.config.lines === 2) {
+        const lineName = state.currentLine === 1 ? "AB" : "CD";
+        lineLabel = `Line<br><span class="line-name-large">${lineName}</span>`;
+    }
+
     let endLabel = "";
     if (state.status === STATE.IDLE) {
         endLabel = "Ready";
@@ -561,27 +567,20 @@ function render() {
         // Check if both lines (or the single line) have finished
         const isEndOfEnd = (state.config.lines === 1) || (state.config.lines === 2 && state.currentLine !== getFirstLine());
 
-        if (isEndOfEnd) {
-            const nextEndNum = endNum + 1;
-            // Handle transition from Practice to Scoring
-            let nextLabel = "";
-            if (state.currentEnd < state.config.practiceEnds + state.config.ends) {
-                const isNextPractice = (state.currentEnd + 1) <= state.config.practiceEnds;
-                const nextIndex = isNextPractice ? (state.currentEnd + 1) : (state.currentEnd + 1 - state.config.practiceEnds);
-                const nextTotal = isNextPractice ? state.config.practiceEnds : state.config.ends;
-                // User request: Remove "End" from "Next: End X/Y". Keep "Practice" if practice.
-                const nextType = isNextPractice ? "Practice " : "";
-                nextLabel = `Next: ${nextType}<span class="end-number-large">${nextIndex}/${nextTotal}</span>`;
-            } else {
-                nextLabel = "Next: Finish";
-            }
-
-            // Line break for large display
-            endLabel = `Last: <span class="end-number-large">${endNum}/${total}</span><br>${nextLabel}`;
-        } else {
-            // Between lines
-            endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
+        const nextEnd = state.currentEnd + (isEndOfEnd ? 1 : 0);
+        const hasNext = nextEnd <= state.config.practiceEnds + state.config.ends;
+        const nextLine = isEndOfEnd ? getFirstLine(nextEnd) : 3 - state.currentLine;
+        const nextLineName = state.config.lines === 2 ? `${nextLine === 1 ? 'AB' : 'CD'} ` : '';
+        let nextLabel = "Next: Finish";
+        if (hasNext) {
+            const isNextPractice = nextEnd <= state.config.practiceEnds;
+            const nextIndex = isNextPractice ? nextEnd : nextEnd - state.config.practiceEnds;
+            const nextTotal = isNextPractice ? state.config.practiceEnds : state.config.ends;
+            nextLabel = state.config.lines === 2
+                ? `Next:${isNextPractice ? ' Practice' : ''}<span class="end-number-large">${nextLineName}${nextIndex}/${nextTotal}</span>`
+                : `Next: ${isNextPractice ? 'Practice ' : ''}<span class="end-number-large">${nextIndex}/${nextTotal}</span>`;
         }
+        endLabel = nextLabel;
     } else {
         endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
     }
@@ -589,12 +588,6 @@ function render() {
     els.bigEnd.innerHTML = endLabel;
     // els.statusEnd.textContent = endLabel; // Removed
 
-    let lineLabel = "Single Line";
-    if (state.config.lines === 2) {
-        // User request: "Line" text same formatting, "AB" or "CD" on next line and 50% larger.
-        const lineName = state.currentLine === 1 ? "AB" : "CD";
-        lineLabel = `Line<br><span class="line-name-large">${lineName}</span>`;
-    }
     els.bigLine.innerHTML = lineLabel;
     // els.statusLine.textContent = lineLabel; // Removed
 

@@ -89,11 +89,40 @@ test('between-end labels recognize CD-first ends correctly', () => {
     assert.equal(app.state.currentLine, 2);
     assert.match(app.elements.get('big-line').innerHTML, />CD</);
     app.finishNow();
-    assert.doesNotMatch(app.elements.get('big-end').innerHTML, /Last:/);
+    assert.equal(app.elements.get('big-end').innerHTML, 'Next:<span class="end-number-large">AB 2/2</span>');
+    assert.match(app.elements.get('big-line').innerHTML, /^Line<br>.*>CD</);
     app.nextSegment();
     assert.equal(app.state.currentLine, 1);
     app.finishNow();
-    assert.match(app.elements.get('big-end').innerHTML, /Next: Finish/);
+    assert.equal(app.elements.get('big-end').innerHTML, 'Next: Finish');
+});
+
+for (const alternateLines of [true, false]) {
+    test(`shows only upcoming line/end with alternation ${alternateLines}`, () => {
+        const app = createApp(`?alternateLines=${alternateLines}&practiceEnds=0&ends=2`);
+        app.startRound();
+        app.finishNow();
+        assert.equal(app.elements.get('big-end').innerHTML, 'Next:<span class="end-number-large">CD 1/2</span>');
+        assert.match(app.elements.get('big-line').innerHTML, /^Line<br>.*>AB</);
+        app.nextSegment();
+        assert.match(app.elements.get('big-line').innerHTML, /^Line<br>.*>CD</);
+        app.finishNow();
+        const nextLine = alternateLines ? 'CD' : 'AB';
+        assert.equal(app.elements.get('big-end').innerHTML, `Next:<span class="end-number-large">${nextLine} 2/2</span>`);
+        app.nextSegment();
+        assert.match(app.elements.get('big-line').innerHTML, new RegExp(`^Line<br>.*>${nextLine}<`));
+        assert.match(app.elements.get('big-end').innerHTML, /End<br>.*2\/2/);
+    });
+}
+
+test('previews practice-to-scoring transition only after both lines finish', () => {
+    const app = createApp('?practiceEnds=1&ends=2');
+    app.startRound();
+    app.finishNow();
+    assert.equal(app.elements.get('big-end').innerHTML, 'Next: Practice<span class="end-number-large">CD 1/1</span>');
+    app.nextSegment();
+    app.finishNow();
+    assert.equal(app.elements.get('big-end').innerHTML, 'Next:<span class="end-number-large">CD 1/2</span>');
 });
 
 test('restart returns to the first line of the same end and reset starts with AB', () => {
