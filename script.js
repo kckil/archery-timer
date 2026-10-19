@@ -7,6 +7,8 @@ const DEFAULTS = {
     preset: 'usa18m',
     lines: 2,
     alternateLines: true,
+    optimizeAppleAudio: false,
+    keepScreenAwake: false,
     ends: 20,
     practiceEnds: 2,
     timePrep: 10,
@@ -53,6 +55,14 @@ let state = {
 
 // --- Audio Context ---
 let audioCtx = null;
+let keepAliveRequested = false;
+let keepAliveAttempt = 0;
+const audioErrors = { context: '', keepAlive: '' };
+
+let screenWakeLock = null;
+let wakeLockPending = false;
+let wakeLockAttempt = 0;
+let wakeLockPageActive = true;
 
 // --- DOM Elements ---
 const els = {};
@@ -63,6 +73,12 @@ function init() {
     els.panel = document.getElementById('config-panel');
     els.timerDisplay = document.getElementById('timer-display');
     els.timerDigits = document.getElementById('timer-digits');
+    els.audioKeepAlive = document.getElementById('audio-keepalive');
+    els.audioWarning = document.getElementById('audio-warning');
+    els.audioWarningText = document.getElementById('audio-warning-text');
+    els.wakeLockStatus = document.getElementById('wake-lock-status');
+    els.wakeLockStatusText = document.getElementById('wake-lock-status-text');
+    els.retryWakeLock = document.getElementById('retry-wake-lock-btn');
 
     els.bigLine = document.getElementById('big-line');
     els.bigLine = document.getElementById('big-line');
@@ -87,6 +103,8 @@ function init() {
         preset: document.getElementById('preset-select'),
         lines: document.getElementById('lines-select'),
         alternateLines: document.getElementById('alternate-lines-check'),
+        optimizeAppleAudio: document.getElementById('optimize-apple-audio-check'),
+        keepScreenAwake: document.getElementById('keep-screen-awake-check'),
         ends: document.getElementById('ends-input'),
         practiceEnds: document.getElementById('practice-ends-input'),
         timePrep: document.getElementById('time-prep-input'),
@@ -138,6 +156,31 @@ function bindEvents() {
     els.btns.reset = document.getElementById('reset-btn');
     els.btns.reset.addEventListener('click', () => confirmReset());
     els.btns.timeFormat.addEventListener('click', () => toggleTimeFormat());
+    document.getElementById('retry-audio-btn').addEventListener('click', () => {
+        resumeAudioContext();
+        updateAudioKeepAlive();
+    });
+    els.audioKeepAlive.addEventListener('error', () => {
+        if (keepAliveRequested) reportAudioError('keepAlive', els.audioKeepAlive.error);
+    });
+    els.audioKeepAlive.addEventListener('pause', () => {
+        if (keepAliveRequested && els.audioKeepAlive.paused && !document.hidden) reportAudioError('keepAlive');
+    });
+    els.retryWakeLock.addEventListener('click', () => updateScreenWakeLock());
+    document.addEventListener('visibilitychange', () => {
+        restoreAudio();
+        updateScreenWakeLock();
+    });
+    window.addEventListener('pageshow', () => {
+        wakeLockPageActive = true;
+        restoreAudio();
+        updateScreenWakeLock();
+    });
+    window.addEventListener('pagehide', () => {
+        wakeLockPageActive = false;
+        stopAudioKeepAlive();
+        updateScreenWakeLock();
+    });
 
     // Modal
     els.modal = {
@@ -192,6 +235,8 @@ function handleConfigChange(e) {
         i.practiceEnds.value = cc.practiceEnds;
         i.lines.value = cc.lines;
         i.alternateLines.checked = cc.alternateLines;
+        i.optimizeAppleAudio.checked = cc.optimizeAppleAudio;
+        i.keepScreenAwake.checked = cc.keepScreenAwake;
         i.beepPrep.checked = cc.beepPrep;
         i.beepShoot.checked = cc.beepShoot;
         i.beepEnd.checked = cc.beepEnd;
@@ -202,6 +247,8 @@ function handleConfigChange(e) {
     c.preset = i.preset.value;
     c.lines = parseInt(i.lines.value);
     c.alternateLines = i.alternateLines.checked;
+    c.optimizeAppleAudio = i.optimizeAppleAudio.checked;
+    c.keepScreenAwake = i.keepScreenAwake.checked;
     i.alternateLines.disabled = c.lines !== 2;
     c.ends = parseInt(i.ends.value);
     c.practiceEnds = parseInt(i.practiceEnds.value);
@@ -222,6 +269,8 @@ function handleConfigChange(e) {
     }
 
     updateURL();
+    updateAudioKeepAlive();
+    updateScreenWakeLock();
     renderTheme();
     renderTimer();
 }
@@ -243,6 +292,8 @@ function loadConfigFromURL() {
     if (params.has('preset')) c.preset = params.get('preset');
     if (params.has('lines')) c.lines = parseInt(params.get('lines'));
     if (params.has('alternateLines')) c.alternateLines = params.get('alternateLines') === 'true';
+    if (params.has('optimizeAppleAudio')) c.optimizeAppleAudio = params.get('optimizeAppleAudio') === 'true';
+    if (params.has('keepScreenAwake')) c.keepScreenAwake = params.get('keepScreenAwake') === 'true';
     if (params.has('ends')) c.ends = parseInt(params.get('ends'));
     if (params.has('practiceEnds')) c.practiceEnds = parseInt(params.get('practiceEnds'));
     if (params.has('timePrep')) c.timePrep = parseInt(params.get('timePrep'));
@@ -259,6 +310,8 @@ function loadConfigFromURL() {
     i.preset.value = c.preset;
     i.lines.value = c.lines;
     i.alternateLines.checked = c.alternateLines;
+    i.optimizeAppleAudio.checked = c.optimizeAppleAudio;
+    i.keepScreenAwake.checked = c.keepScreenAwake;
     i.alternateLines.disabled = c.lines !== 2;
     i.ends.value = c.ends;
     i.practiceEnds.value = c.practiceEnds;
@@ -293,11 +346,8 @@ function renderTheme() {
 // --- Core Logic Placeholders ---
 function startRound() {
     console.log('Start Round');
-    // Initialize Audio
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Initialize Audio
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    resumeAudioContext();
 
     state.status = STATE.PREP; // Or check logic
     state.currentEnd = 1;
@@ -319,6 +369,8 @@ function startRound() {
 function enterState(newState) {
     state.status = newState;
     state.paused = false;
+    updateAudioKeepAlive();
+    updateScreenWakeLock();
 
     if (newState === STATE.PREP) {
         state.remainingMs = state.config.timePrep * 1000;
@@ -444,6 +496,8 @@ function hideModal() {
 function resetRound() {
     stopTimer();
     state.status = STATE.IDLE;
+    updateAudioKeepAlive();
+    updateScreenWakeLock();
     state.paused = false;
     state.currentEnd = 0;
     state.currentLine = 1;
@@ -475,9 +529,144 @@ function restartEnd() {
     render();
 }
 
+function renderAudioWarning() {
+    els.audioWarningText.textContent = Object.values(audioErrors).filter(Boolean).join(' ');
+    els.audioWarning.hidden = !els.audioWarningText.textContent;
+}
+
+function reportAudioError(type, error) {
+    audioErrors[type] = type === 'keepAlive'
+        ? 'Silent audio could not stay active. Tap Retry Audio.'
+        : 'Timer audio could not resume. Tap Retry Audio.';
+    console.error(audioErrors[type], error || 'Audio playback was interrupted.');
+    renderAudioWarning();
+}
+
+function resumeAudioContext() {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+        audioCtx.resume().then(() => {
+            audioErrors.context = '';
+            renderAudioWarning();
+        }).catch(error => reportAudioError('context', error));
+    }
+}
+
+function isRoundInProgress() {
+    return [STATE.PREP, STATE.SHOOT, STATE.BETWEEN].includes(state.status);
+}
+
+function shouldKeepAudioAlive() {
+    return state.config.optimizeAppleAudio && isRoundInProgress();
+}
+
+function stopAudioKeepAlive() {
+    keepAliveRequested = false;
+    keepAliveAttempt++;
+    els.audioKeepAlive.pause();
+    els.audioKeepAlive.currentTime = 0;
+    audioErrors.keepAlive = '';
+    renderAudioWarning();
+}
+
+function updateAudioKeepAlive() {
+    if (!shouldKeepAudioAlive()) {
+        stopAudioKeepAlive();
+        return;
+    }
+    if (keepAliveRequested && !els.audioKeepAlive.paused) return;
+    keepAliveRequested = true;
+    const attempt = ++keepAliveAttempt;
+    // Do not mute this element: it must retain an audio output route.
+    els.audioKeepAlive.play().then(() => {
+        if (attempt !== keepAliveAttempt) return;
+        audioErrors.keepAlive = '';
+        renderAudioWarning();
+    }).catch(error => {
+        if (attempt === keepAliveAttempt) reportAudioError('keepAlive', error);
+    });
+}
+
+function restoreAudio() {
+    if (!document.hidden && shouldKeepAudioAlive()) {
+        resumeAudioContext();
+        updateAudioKeepAlive();
+    }
+}
+
+function wantsScreenWakeLock() {
+    return state.config.keepScreenAwake && isRoundInProgress()
+        && !document.hidden && wakeLockPageActive;
+}
+
+function setWakeLockStatus(message, canRetry = false) {
+    els.wakeLockStatus.hidden = !state.config.keepScreenAwake || !isRoundInProgress();
+    els.wakeLockStatusText.textContent = message;
+    els.retryWakeLock.hidden = !canRetry;
+}
+
+function releaseScreenWakeLock() {
+    wakeLockAttempt++;
+    const lock = screenWakeLock;
+    screenWakeLock = null;
+    if (lock && !lock.released) {
+        lock.release().catch(error => {
+            console.error('Could not release the screen wake lock:', error);
+            setWakeLockStatus('Could not release the screen wake lock. Close the app to release it.');
+        });
+    }
+}
+
+async function updateScreenWakeLock() {
+    if (!wantsScreenWakeLock()) {
+        releaseScreenWakeLock();
+        setWakeLockStatus('Screen wake lock is inactive while the app is hidden or the round is stopped.');
+        return;
+    }
+    if (!window.isSecureContext || !('wakeLock' in navigator)) {
+        setWakeLockStatus('Keep Screen Awake is unavailable. Use HTTPS and a browser that supports screen wake locks.');
+        return;
+    }
+    if (screenWakeLock && !screenWakeLock.released) {
+        setWakeLockStatus('Screen kept awake.');
+        return;
+    }
+    if (wakeLockPending) return;
+    wakeLockPending = true;
+    const attempt = ++wakeLockAttempt;
+    setWakeLockStatus('Requesting screen wake lock...');
+    try {
+        const lock = await navigator.wakeLock.request('screen');
+        if (attempt !== wakeLockAttempt || !wantsScreenWakeLock()) {
+            await lock.release();
+            return;
+        }
+        if (lock.released) {
+            setWakeLockStatus('Screen wake lock was released. Power-saving settings may prevent it.', true);
+            return;
+        }
+        screenWakeLock = lock;
+        setWakeLockStatus('Screen kept awake.');
+        lock.addEventListener('release', () => {
+            if (screenWakeLock !== lock) return;
+            screenWakeLock = null;
+            setWakeLockStatus('Screen wake lock was released. Power-saving settings may prevent it.', true);
+        });
+    } catch (error) {
+        console.error('Could not keep the screen awake:', error);
+        if (attempt === wakeLockAttempt && wantsScreenWakeLock()) {
+            setWakeLockStatus('Could not keep the screen awake. Check power-saving settings or try again.', true);
+        }
+    } finally {
+        wakeLockPending = false;
+        // A round may restart or become visible while a previous request is pending.
+        if (attempt !== wakeLockAttempt && wantsScreenWakeLock()) updateScreenWakeLock();
+    }
+}
+
 function playSound(type) {
     if (!audioCtx) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    resumeAudioContext();
 
     const c = state.config;
 

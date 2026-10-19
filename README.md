@@ -42,6 +42,42 @@ Keep all required files in its precache list. Paths are relative, so root hostin
 and GitHub Pages project subdirectories are supported. Offline support requires
 HTTP on localhost or HTTPS elsewhere; opening `index.html` directly is not enough.
 
+### Apple Bluetooth audio workaround
+
+**Optimize Audio for Apple Devices**, at the bottom of settings, is off by default
+and saved as `optimizeAppleAudio=true` in the URL when enabled. After you press
+Start Round, it loops a local, digitally silent WAV file to help keep the audio
+output active during prep, shooting, pauses, and between lines/ends. It stops when
+the round finishes or resets, the option is disabled, or the page is left.
+The file is included in the offline cache; no external audio download is needed.
+It does not change which buzzer cues are enabled.
+
+This is a best-effort workaround for idle audio routing, not a guarantee against
+Bluetooth disconnections or a verified fix for every Apple device/speaker.
+Safari can interrupt playback when the app is backgrounded, the device locks, or
+another app takes over audio. Keep the timer visible, test your actual Bluetooth
+speaker before a round, and use **Retry Audio** if a playback warning appears.
+Continuous playback may increase battery use.
+
+Browser constraints: [WebKit autoplay policy](https://webkit.org/blog/7734/auto-play-policy-changes-for-macos/)
+and [interrupted AudioContext states](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state).
+
+### Keeping the screen awake
+
+**Keep Screen Awake**, at the bottom of settings, is off by default and saved as
+`keepScreenAwake=true` in the URL when enabled. It requests a screen wake lock
+during a round, including pauses and time between lines/ends, and releases it on
+finish, reset, disabling the option, or leaving the page. Returning to the visible
+timer requests a new lock if the round is still in progress.
+
+The timer displays whether the screen is kept awake or the request was refused.
+Use **Retry Screen Wake Lock** if the system releases or denies it. HTTPS (or
+localhost) and a supporting browser are required; battery/power-saving settings
+can prevent the lock. This prevents automatic screen sleep only while the page
+is visible. It cannot override manually locking the device or keep the timer
+running reliably in the background. Home-screen installation is optional and
+does not grant native-app background privileges.
+
 ## 📂 Project Structure
 
 *   **`index.html`**: The main entry point. Contains the HTML structure for the timer display, configuration panel, and controls.
