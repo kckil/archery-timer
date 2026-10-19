@@ -6,6 +6,7 @@
 const DEFAULTS = {
     preset: 'usa18m',
     lines: 2,
+    alternateLines: true,
     ends: 20,
     practiceEnds: 2,
     timePrep: 10,
@@ -39,7 +40,7 @@ let state = {
     config: { ...DEFAULTS },
     customConfig: { ...DEFAULTS }, // Store custom values here
     currentEnd: 0, // 0 = not started
-    currentLine: 1, // 1 = A, 2 = B
+    currentLine: 1, // 1 = AB, 2 = CD
     paused: false,
     remainingMs: 0,
     lastTick: 0,
@@ -85,6 +86,7 @@ function init() {
     els.inputs = {
         preset: document.getElementById('preset-select'),
         lines: document.getElementById('lines-select'),
+        alternateLines: document.getElementById('alternate-lines-check'),
         ends: document.getElementById('ends-input'),
         practiceEnds: document.getElementById('practice-ends-input'),
         timePrep: document.getElementById('time-prep-input'),
@@ -189,6 +191,7 @@ function handleConfigChange(e) {
         i.ends.value = cc.ends;
         i.practiceEnds.value = cc.practiceEnds;
         i.lines.value = cc.lines;
+        i.alternateLines.checked = cc.alternateLines;
         i.beepPrep.checked = cc.beepPrep;
         i.beepShoot.checked = cc.beepShoot;
         i.beepEnd.checked = cc.beepEnd;
@@ -198,6 +201,8 @@ function handleConfigChange(e) {
     // Update Config State
     c.preset = i.preset.value;
     c.lines = parseInt(i.lines.value);
+    c.alternateLines = i.alternateLines.checked;
+    i.alternateLines.disabled = c.lines !== 2;
     c.ends = parseInt(i.ends.value);
     c.practiceEnds = parseInt(i.practiceEnds.value);
     c.timePrep = parseInt(i.timePrep.value);
@@ -237,6 +242,7 @@ function loadConfigFromURL() {
 
     if (params.has('preset')) c.preset = params.get('preset');
     if (params.has('lines')) c.lines = parseInt(params.get('lines'));
+    if (params.has('alternateLines')) c.alternateLines = params.get('alternateLines') === 'true';
     if (params.has('ends')) c.ends = parseInt(params.get('ends'));
     if (params.has('practiceEnds')) c.practiceEnds = parseInt(params.get('practiceEnds'));
     if (params.has('timePrep')) c.timePrep = parseInt(params.get('timePrep'));
@@ -252,6 +258,8 @@ function loadConfigFromURL() {
     const i = els.inputs;
     i.preset.value = c.preset;
     i.lines.value = c.lines;
+    i.alternateLines.checked = c.alternateLines;
+    i.alternateLines.disabled = c.lines !== 2;
     i.ends.value = c.ends;
     i.practiceEnds.value = c.practiceEnds;
     i.timePrep.value = c.timePrep;
@@ -382,6 +390,10 @@ function togglePause() {
     render();
 }
 
+function getFirstLine(end = state.currentEnd) {
+    return state.config.lines === 2 && state.config.alternateLines && end % 2 === 0 ? 2 : 1;
+}
+
 function nextSegment() {
     // Stats: Calculate duration of the segment just finished (Prep+Shoot+Wait)
     if (state.currentEndStartTime) {
@@ -396,15 +408,15 @@ function nextSegment() {
     const totalEnds = c.practiceEnds + c.ends;
 
     if (c.lines === 2) {
-        if (state.currentLine === 1) {
-            state.currentLine = 2;
+        if (state.currentLine === getFirstLine()) {
+            state.currentLine = 3 - state.currentLine;
             // Go to Prep or Shoot
             c.timePrep > 0 ? enterState(STATE.PREP) : enterState(STATE.SHOOT);
         } else {
-            // Line 2 done
+            // Both lines done
             if (state.currentEnd < totalEnds) {
                 state.currentEnd++;
-                state.currentLine = 1;
+                state.currentLine = getFirstLine();
                 c.timePrep > 0 ? enterState(STATE.PREP) : enterState(STATE.SHOOT);
             } else {
                 enterState(STATE.FINISHED);
@@ -442,10 +454,10 @@ function resetRound() {
 }
 
 function restartEnd() {
-    // Restart the current end from the beginning (Line A/AB)
+    // Restart the current end from its first line
     // Spec: "Restart end... go back to the paused state at the beginning of the current end"
     stopTimer();
-    state.currentLine = 1;
+    state.currentLine = getFirstLine();
 
     // Determine start state based on config
     if (state.config.timePrep > 0) {
@@ -540,36 +552,35 @@ function render() {
     const endNum = isPractice ? state.currentEnd : (state.currentEnd - state.config.practiceEnds);
     const total = isPractice ? state.config.practiceEnds : state.config.ends;
 
+    let lineLabel = "Single Line";
+    if (state.config.lines === 2) {
+        const lineName = state.currentLine === 1 ? "AB" : "CD";
+        lineLabel = `Line<br><span class="line-name-large">${lineName}</span>`;
+    }
+
     let endLabel = "";
     if (state.status === STATE.IDLE) {
         endLabel = "Ready";
     } else if (state.status === STATE.FINISHED) {
         endLabel = "Finished";
     } else if (state.status === STATE.BETWEEN) {
-        // Check if we are between ENDS (Line 2 done or Single Line done)
-        const isEndOfEnd = (state.config.lines === 1) || (state.config.lines === 2 && state.currentLine === 2);
+        // Check if both lines (or the single line) have finished
+        const isEndOfEnd = (state.config.lines === 1) || (state.config.lines === 2 && state.currentLine !== getFirstLine());
 
-        if (isEndOfEnd) {
-            const nextEndNum = endNum + 1;
-            // Handle transition from Practice to Scoring
-            let nextLabel = "";
-            if (state.currentEnd < state.config.practiceEnds + state.config.ends) {
-                const isNextPractice = (state.currentEnd + 1) <= state.config.practiceEnds;
-                const nextIndex = isNextPractice ? (state.currentEnd + 1) : (state.currentEnd + 1 - state.config.practiceEnds);
-                const nextTotal = isNextPractice ? state.config.practiceEnds : state.config.ends;
-                // User request: Remove "End" from "Next: End X/Y". Keep "Practice" if practice.
-                const nextType = isNextPractice ? "Practice " : "";
-                nextLabel = `Next: ${nextType}<span class="end-number-large">${nextIndex}/${nextTotal}</span>`;
-            } else {
-                nextLabel = "Next: Finish";
-            }
-
-            // Line break for large display
-            endLabel = `Last: <span class="end-number-large">${endNum}/${total}</span><br>${nextLabel}`;
-        } else {
-            // Between lines (AB -> CD)
-            endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
+        const nextEnd = state.currentEnd + (isEndOfEnd ? 1 : 0);
+        const hasNext = nextEnd <= state.config.practiceEnds + state.config.ends;
+        const nextLine = isEndOfEnd ? getFirstLine(nextEnd) : 3 - state.currentLine;
+        const nextLineName = state.config.lines === 2 ? `${nextLine === 1 ? 'AB' : 'CD'} ` : '';
+        let nextLabel = "Next: Finish";
+        if (hasNext) {
+            const isNextPractice = nextEnd <= state.config.practiceEnds;
+            const nextIndex = isNextPractice ? nextEnd : nextEnd - state.config.practiceEnds;
+            const nextTotal = isNextPractice ? state.config.practiceEnds : state.config.ends;
+            nextLabel = state.config.lines === 2
+                ? `Next:${isNextPractice ? ' Practice' : ''}<span class="end-number-large">${nextLineName}${nextIndex}/${nextTotal}</span>`
+                : `Next: ${isNextPractice ? 'Practice ' : ''}<span class="end-number-large">${nextIndex}/${nextTotal}</span>`;
         }
+        endLabel = nextLabel;
     } else {
         endLabel = `${isPractice ? 'Practice' : 'End'}<br><span class="end-number-large">${endNum}/${total}</span>`;
     }
@@ -577,12 +588,6 @@ function render() {
     els.bigEnd.innerHTML = endLabel;
     // els.statusEnd.textContent = endLabel; // Removed
 
-    let lineLabel = "Single Line";
-    if (state.config.lines === 2) {
-        // User request: "Line" text same formatting, "AB" or "CD" on next line and 50% larger.
-        const lineName = state.currentLine === 1 ? "AB" : "CD";
-        lineLabel = `Line<br><span class="line-name-large">${lineName}</span>`;
-    }
     els.bigLine.innerHTML = lineLabel;
     // els.statusLine.textContent = lineLabel; // Removed
 
