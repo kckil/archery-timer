@@ -338,6 +338,35 @@ body.warning #timer-display {
     text-align: center;
 }
 
+#apple-audio-help,
+#wake-lock-help {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+#audio-warning,
+#wake-lock-status {
+    max-width: 100%;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--panel-bg);
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+#wake-lock-status {
+    order: 1;
+    align-self: flex-start;
+    margin-top: var(--spacing-sm);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+#wake-lock-status button {
+    font-size: inherit;
+}
+
 .info-link:hover {
     opacity: 1;
     text-decoration: underline;
@@ -553,6 +582,10 @@ button:disabled {
     .hotkey {
         display: none;
     }
+
+    #wake-lock-status {
+        font-size: 0.65rem;
+    }
 }
 
 /* Phone landscape: everything squishes into ~430px height */
@@ -602,6 +635,10 @@ button:disabled {
     #stats-display {
         gap: 0.15rem;
         margin-top: 0;
+    }
+
+    #wake-lock-status {
+        font-size: 0.65rem;
     }
 }
 

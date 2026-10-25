@@ -67,6 +67,7 @@ for (const path of ['/', '/archery-timer/']) {
         assert.equal(await worker.request(`${root}script.js`, 'cors'), `${root}script.js`);
         assert.equal(await worker.request(`${root}style.css?v=2`, 'cors'), `${root}style.css`);
         assert.equal(await worker.request(`${root}icons/icon-192.png`, 'cors'), `${root}icons/icon-192.png`);
+        assert.equal(await worker.request(`${root}audio/silence.wav`, 'cors'), `${root}audio/silence.wav`);
         assert.deepEqual(worker.network, []);
     });
 }
