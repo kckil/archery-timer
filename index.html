@@ -99,6 +99,22 @@
                 </label>
             </div>
 
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="optimize-apple-audio-check" aria-describedby="apple-audio-help">
+                    Optimize Audio for Apple Devices
+                </label>
+                <small id="apple-audio-help">Plays silence during rounds to help keep Bluetooth audio awake. Keep the app open; background playback is not guaranteed.</small>
+            </div>
+
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="keep-screen-awake-check" aria-describedby="wake-lock-help">
+                    Keep Screen Awake
+                </label>
+                <small id="wake-lock-help">Prevents automatic screen sleep during rounds while this app is visible. Your device may refuse the request in power-saving mode.</small>
+            </div>
+
             <div class="panel-controls">
                 <button id="start-btn-panel" class="btn-primary">Start Round</button>
                 <p id="offline-status" role="status">Preparing offline access...</p>
@@ -130,6 +146,16 @@
                 <div class="stat-row-small">
                     <span id="stat-started-at">Started at: --:--</span>
                 </div>
+            </div>
+
+            <div id="audio-warning" role="status" hidden>
+                <span id="audio-warning-text"></span>
+                <button id="retry-audio-btn" class="btn-secondary">Retry Audio</button>
+            </div>
+
+            <div id="wake-lock-status" role="status" hidden>
+                <span id="wake-lock-status-text"></span>
+                <button id="retry-wake-lock-btn" class="btn-secondary" hidden>Retry Screen Wake Lock</button>
             </div>
 
             <!-- Running Controls (Hidden in Idle) -->
@@ -177,6 +203,7 @@
         </div>
     </div>
 
+    <audio id="audio-keepalive" src="audio/silence.wav" loop preload="none" playsinline></audio>
     <script src="script.js"></script>
     <script src="offline.js"></script>
 </body>
