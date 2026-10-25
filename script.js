@@ -7,6 +7,7 @@ const DEFAULTS = {
     preset: 'usa18m',
     lines: 2,
     alternateLines: true,
+    simplerKeyboardControls: false,
     ends: 20,
     practiceEnds: 2,
     timePrep: 10,
@@ -87,6 +88,7 @@ function init() {
         preset: document.getElementById('preset-select'),
         lines: document.getElementById('lines-select'),
         alternateLines: document.getElementById('alternate-lines-check'),
+        simplerKeyboardControls: document.getElementById('simpler-keyboard-controls-check'),
         ends: document.getElementById('ends-input'),
         practiceEnds: document.getElementById('practice-ends-input'),
         timePrep: document.getElementById('time-prep-input'),
@@ -132,7 +134,7 @@ function bindEvents() {
     els.btns.startPanel.addEventListener('click', () => startRound());
     els.btns.pause.addEventListener('click', () => togglePause());
     els.btns.finishNow.addEventListener('click', () => finishNow());
-    els.btns.next.addEventListener('click', () => nextSegment());
+    els.btns.next.addEventListener('click', () => finishOrAdvance());
     els.btns.restartEnd = document.getElementById('restart-end-btn');
     els.btns.restartEnd.addEventListener('click', () => restartEnd());
     els.btns.reset = document.getElementById('reset-btn');
@@ -192,6 +194,7 @@ function handleConfigChange(e) {
         i.practiceEnds.value = cc.practiceEnds;
         i.lines.value = cc.lines;
         i.alternateLines.checked = cc.alternateLines;
+        i.simplerKeyboardControls.checked = cc.simplerKeyboardControls;
         i.beepPrep.checked = cc.beepPrep;
         i.beepShoot.checked = cc.beepShoot;
         i.beepEnd.checked = cc.beepEnd;
@@ -202,6 +205,7 @@ function handleConfigChange(e) {
     c.preset = i.preset.value;
     c.lines = parseInt(i.lines.value);
     c.alternateLines = i.alternateLines.checked;
+    c.simplerKeyboardControls = i.simplerKeyboardControls.checked;
     i.alternateLines.disabled = c.lines !== 2;
     c.ends = parseInt(i.ends.value);
     c.practiceEnds = parseInt(i.practiceEnds.value);
@@ -222,8 +226,7 @@ function handleConfigChange(e) {
     }
 
     updateURL();
-    renderTheme();
-    renderTimer();
+    render();
 }
 
 function toggleTimeFormat() {
@@ -243,6 +246,7 @@ function loadConfigFromURL() {
     if (params.has('preset')) c.preset = params.get('preset');
     if (params.has('lines')) c.lines = parseInt(params.get('lines'));
     if (params.has('alternateLines')) c.alternateLines = params.get('alternateLines') === 'true';
+    if (params.has('simplerKeyboardControls')) c.simplerKeyboardControls = params.get('simplerKeyboardControls') === 'true';
     if (params.has('ends')) c.ends = parseInt(params.get('ends'));
     if (params.has('practiceEnds')) c.practiceEnds = parseInt(params.get('practiceEnds'));
     if (params.has('timePrep')) c.timePrep = parseInt(params.get('timePrep'));
@@ -259,6 +263,7 @@ function loadConfigFromURL() {
     i.preset.value = c.preset;
     i.lines.value = c.lines;
     i.alternateLines.checked = c.alternateLines;
+    i.simplerKeyboardControls.checked = c.simplerKeyboardControls;
     i.alternateLines.disabled = c.lines !== 2;
     i.ends.value = c.ends;
     i.practiceEnds.value = c.practiceEnds;
@@ -379,6 +384,15 @@ function finishNow() {
     if (state.status === STATE.PREP || state.status === STATE.SHOOT) {
         playSound('end');
         enterState(STATE.BETWEEN);
+    }
+}
+
+function finishOrAdvance() {
+    const isTimerActive = state.status === STATE.PREP || state.status === STATE.SHOOT;
+    if (state.config.simplerKeyboardControls && isTimerActive && !state.paused) {
+        finishNow();
+    } else if (state.status === STATE.BETWEEN || (isTimerActive && state.paused)) {
+        nextSegment();
     }
 }
 
@@ -593,21 +607,15 @@ function render() {
 
     // els.statusState.textContent = state.status.toUpperCase(); // Removed
 
-    // Buttons
-    // Enable Next Line/End if Between OR if we just restarted (Paused in Prep/Shoot)
-    // User request: "Make sure after the restart that 'Next Line/End' is enabled."
-    // We can detect "just restarted" if we are Paused and at start time?
-    // Or just enable it always if we want to allow skipping?
-    // Let's enable it if Between OR (Paused AND (Prep or Shoot))?
-    // Actually, user specifically asked for it after restart.
-    // Let's just enable it if we are not in IDLE/FINISHED?
-    // No, standard behavior is disabled during running.
-    // But "Restart Current End" puts us in Paused state.
-    // Let's enable if status is BETWEEN or (status is PREP/SHOOT and paused).
-    els.btns.next.disabled = !(state.status === STATE.BETWEEN || (state.paused && (state.status === STATE.PREP || state.status === STATE.SHOOT)));
+    const isTimerActive = state.status === STATE.PREP || state.status === STATE.SHOOT;
+    const simplerControls = state.config.simplerKeyboardControls;
+    els.btns.finishNow.hidden = simplerControls;
+    els.btns.finishNow.disabled = !isTimerActive;
+    els.btns.next.disabled = !(state.status === STATE.BETWEEN || (isTimerActive && (simplerControls || state.paused)));
+    els.btns.next.querySelector('.btn-label').textContent =
+        simplerControls && isTimerActive && !state.paused ? "Finish Now" : "Next Line/End";
 
     // Pause/Resume active only when timer is active (Prep/Shoot)
-    const isTimerActive = state.status === STATE.PREP || state.status === STATE.SHOOT;
     els.btns.pause.disabled = !isTimerActive;
     const pauseLabel = els.btns.pause.querySelector('.btn-label');
     if (pauseLabel) pauseLabel.textContent = state.paused ? "Resume" : "Pause";
@@ -727,10 +735,11 @@ function handleKeydown(e) {
         if (state.status === STATE.PREP || state.status === STATE.SHOOT) finishNow();
     }
 
-    // spacebar for "Next line/end"
+    // Space uses the same action as the primary button.
     if (code === 'Space') {
         e.preventDefault(); // Prevent scrolling
-        if (!els.btns.next.disabled) nextSegment();
+        if (e.repeat) return;
+        finishOrAdvance();
     }
 
     // J for "restart current end"

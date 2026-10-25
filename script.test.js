@@ -10,6 +10,8 @@ function createApp(search = '') {
     const elements = new Map();
     for (const [, id] of html.matchAll(/id="([^"]+)"/g)) {
         const classes = new Set();
+        const listeners = new Map();
+        const label = { textContent: '' };
         elements.set(id, {
             value: '',
             checked: false,
@@ -19,8 +21,11 @@ function createApp(search = '') {
                 add: name => classes.add(name),
                 remove: name => classes.delete(name)
             },
-            addEventListener() {},
-            querySelector: () => null
+            addEventListener: (type, callback) => listeners.set(type, callback),
+            click() {
+                if (!this.disabled) listeners.get('click')?.();
+            },
+            querySelector: selector => selector === '.btn-label' ? label : null
         });
     }
     const context = vm.createContext({
@@ -44,7 +49,7 @@ function createApp(search = '') {
     vm.runInContext(`${source}
         globalThis.app = {
             state, startRound, nextSegment, finishNow, restartEnd, resetRound,
-            handleConfigChange
+            handleConfigChange, handleKeydown, togglePause, handleTimerExpired
         };
     `, context);
     // Exercise the real state machine without generating audio.
@@ -181,4 +186,144 @@ test('checkbox changes persist in the URL and survive preset changes', () => {
     app.handleConfigChange({ target: checkbox });
     assert.equal(app.state.config.alternateLines, false);
     assert.match(app.context.savedURL, /alternateLines=false/);
+});
+
+function pressSpace(app, options = {}) {
+    let prevented = false;
+    app.handleKeydown({
+        code: 'Space',
+        key: ' ',
+        repeat: false,
+        target: { tagName: 'BODY' },
+        preventDefault() { prevented = true; },
+        ...options
+    });
+    return prevented;
+}
+
+for (const timePrep of [0, 10]) {
+    test(`Space finishes the active segment and a second press advances (prep ${timePrep})`, () => {
+        const app = createApp(`?simplerKeyboardControls=true&practiceEnds=0&ends=1&timePrep=${timePrep}`);
+        app.startRound();
+        assert.equal(pressSpace(app), true);
+        assert.equal(app.state.status, 'between');
+        assert.equal(app.state.currentLine, 1);
+        pressSpace(app, { repeat: true });
+        assert.equal(app.state.status, 'between');
+        assert.equal(app.state.currentLine, 1);
+        pressSpace(app);
+        assert.equal(app.state.status, timePrep ? 'prep' : 'shoot');
+        assert.equal(app.state.currentLine, 2);
+        pressSpace(app, { repeat: true });
+        assert.equal(app.state.status, timePrep ? 'prep' : 'shoot');
+        pressSpace(app);
+        pressSpace(app);
+        assert.equal(app.state.status, 'finished');
+        pressSpace(app);
+        assert.equal(app.state.status, 'finished');
+    });
+}
+
+test('Space keeps advance behavior for paused/restarted segments', () => {
+    const app = createApp();
+    app.startRound();
+    app.restartEnd();
+    pressSpace(app);
+    assert.equal(app.state.currentLine, 2);
+    assert.equal(app.state.paused, false);
+    assert.equal(app.state.status, 'prep');
+});
+
+test('Space ignores configuration inputs and does not start an idle round', () => {
+    const app = createApp();
+    pressSpace(app);
+    assert.equal(app.state.status, 'idle');
+    app.startRound();
+    for (const tagName of ['INPUT', 'SELECT']) {
+        assert.equal(pressSpace(app, { target: { tagName } }), false);
+        assert.equal(app.state.status, 'prep');
+    }
+});
+
+for (const timePrep of [0, 10]) {
+    test(`one button finishes and advances with a state-dependent label (prep ${timePrep})`, () => {
+        const app = createApp(`?simplerKeyboardControls=true&lines=1&practiceEnds=0&ends=1&timePrep=${timePrep}`);
+        const button = app.elements.get('next-btn');
+        const label = button.querySelector('.btn-label');
+        assert.equal(app.elements.get('finish-now-btn').hidden, true);
+        assert.equal(button.disabled, true);
+        app.startRound();
+        assert.equal(label.textContent, 'Finish Now');
+        assert.equal(button.disabled, false);
+        button.click();
+        assert.equal(app.state.status, 'between');
+        assert.equal(label.textContent, 'Next Line/End');
+        button.click();
+        assert.equal(app.state.status, 'finished');
+        assert.equal(button.disabled, true);
+    });
+}
+
+test('the primary button follows pause/resume, restart, and natural timer expiry', () => {
+    const app = createApp('?simplerKeyboardControls=true&timePrep=0');
+    const button = app.elements.get('next-btn');
+    const label = button.querySelector('.btn-label');
+    app.startRound();
+    app.togglePause();
+    assert.equal(label.textContent, 'Next Line/End');
+    app.togglePause();
+    assert.equal(label.textContent, 'Finish Now');
+    app.restartEnd();
+    assert.equal(label.textContent, 'Next Line/End');
+    button.click();
+    assert.equal(app.state.currentLine, 2);
+    assert.equal(label.textContent, 'Finish Now');
+    app.handleTimerExpired();
+    assert.equal(label.textContent, 'Next Line/End');
+    assert.equal(button.disabled, false);
+});
+
+test('default controls keep separate buttons and Space cannot finish a running segment', () => {
+    const app = createApp('?timePrep=0');
+    const finish = app.elements.get('finish-now-btn');
+    const next = app.elements.get('next-btn');
+    assert.equal(app.elements.get('simpler-keyboard-controls-check').checked, false);
+    app.startRound();
+    assert.equal(finish.hidden, false);
+    assert.equal(next.disabled, true);
+    assert.equal(next.querySelector('.btn-label').textContent, 'Next Line/End');
+    pressSpace(app);
+    assert.equal(app.state.status, 'shoot');
+    finish.click();
+    assert.equal(app.state.status, 'between');
+    assert.equal(next.disabled, false);
+    pressSpace(app);
+    assert.equal(app.state.currentLine, 2);
+    app.handleKeydown({ key: 'f', code: 'KeyF', target: { tagName: 'BODY' } });
+    assert.equal(app.state.status, 'between');
+});
+
+test('simpler controls persist through URL reload and preset changes and can be turned off', () => {
+    const app = createApp('?beepPrep=false&beepShoot=false&beepEnd=false');
+    const checkbox = app.elements.get('simpler-keyboard-controls-check');
+    checkbox.checked = true;
+    app.handleConfigChange({ target: checkbox });
+    assert.equal(app.state.config.simplerKeyboardControls, true);
+    assert.equal(app.elements.get('finish-now-btn').hidden, true);
+    const reloaded = createApp(new URL(app.context.savedURL, 'http://localhost').search);
+    assert.equal(reloaded.elements.get('simpler-keyboard-controls-check').checked, true);
+    assert.equal(reloaded.elements.get('finish-now-btn').hidden, true);
+    const preset = app.elements.get('preset-select');
+    preset.value = 'usaOutdoor';
+    app.handleConfigChange({ target: preset });
+    preset.value = 'custom';
+    app.handleConfigChange({ target: preset });
+    assert.equal(checkbox.checked, true);
+    checkbox.checked = false;
+    app.handleConfigChange({ target: checkbox });
+    assert.equal(app.elements.get('finish-now-btn').hidden, false);
+    assert.match(app.context.savedURL, /simplerKeyboardControls=false/);
+    app.startRound();
+    pressSpace(app);
+    assert.equal(app.state.status, 'prep');
 });
