@@ -128,7 +128,7 @@ for layout, audio, service worker installation, or offline reopening.
 
 ## Round settings and controls
 
-**Alternate Ends** is checked by default for two-line shooting. The first end runs
+**Alternate Line Order** is checked by default for two-line shooting. The first end runs
 AB then CD, the second CD then AB, and so on. Alternation continues across practice
 and scoring ends without resetting at the scoring transition. Uncheck it to always
 run AB first. The setting is disabled and ignored for single-line shooting.
@@ -171,7 +171,7 @@ All settings are saved in the URL query string. This allows users to bookmark th
 
 | Setting | URL parameter | Default |
 |---|---|---|
-| Alternate Ends | `alternateLines=true` or `alternateLines=false` | `true` |
+| Alternate Line Order | `alternateLines=true` or `alternateLines=false` | `true` |
 | Simpler Keyboard Controls | `simplerKeyboardControls=true` or `simplerKeyboardControls=false` | `false` |
 
 Explicit values in bookmarked URLs override these defaults.

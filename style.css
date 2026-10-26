@@ -338,6 +338,7 @@ body.warning #timer-display {
     text-align: center;
 }
 
+#alternate-lines-help,
 #apple-audio-help,
 #wake-lock-help {
     font-size: 0.8rem;

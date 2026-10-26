@@ -17,7 +17,7 @@ Vanilla JS only — no external libraries or runtime dependencies.
 
 ## Line order and controls
 
-- **Alternate Ends** (`alternateLines`) defaults to `true` and only affects two-line shooting. `currentLine` identifies AB (`1`) or CD (`2`), not the line's position in an end.
+- **Alternate Line Order** (`alternateLines`) defaults to `true` and only affects two-line shooting. Its helper text explains alternating which line starts each end, including practice ends, and unchecking to always start with AB. `currentLine` identifies AB (`1`) or CD (`2`), not the line's position in an end.
 - `getFirstLine(end = state.currentEnd)` returns the starting line for an end. Use it for progression, restarting, and previews; do not assume AB starts or CD finishes every end.
 - Alternation uses the absolute end count, including practice ends. The practice-to-scoring transition does not reset it.
 - In `BETWEEN`, the right-aligned display shows only the upcoming line and end. The heading is `Next: Practice` for practice ends, otherwise `Next:`; after the last segment it is `Next: Finish`.
