@@ -5,6 +5,7 @@
 Static web app (no build step, no backend) for archery competition timing.
 The UI and timer live in `index.html`, `style.css`, and `script.js`.
 Offline installation uses `manifest.webmanifest`, `icons/`, `offline.js`, and `sw.js`.
+`audio/silence.wav` supplies the optional Apple audio keepalive and is cached offline.
 Vanilla JS only — no external libraries or runtime dependencies.
 
 ## Architecture
@@ -25,6 +26,18 @@ Vanilla JS only — no external libraries or runtime dependencies.
 - In simpler mode, the primary button and Space both call `finishOrAdvance()`: finish while actively running, advance while between segments or paused/restarted. Keep the button label consistent with its action. `F` remains available to finish prep/shoot.
 - Ignore repeated Space keydowns to prevent a held key from finishing and advancing. Keep shortcuts inactive while an input or select has focus.
 - New settings must be consistent across defaults, input binding, custom-preset restoration, URL loading, and URL serialization.
+
+## Apple audio and screen wake lock
+
+- **Optimize Audio for Apple Devices** (`optimizeAppleAudio`) and **Keep Screen Awake** (`keepScreenAwake`) are independent, default-off settings persisted in the URL.
+- Start silent playback from the Start Round user gesture, not on page load. Keep it running through prep, shooting, pauses, and between-line/end waits; stop and rewind on finish, reset, disabling the option, or `pagehide`.
+- Keep the local WAV digitally silent, but do not mute the audio element or set its volume to zero: the workaround relies on retaining an audio output route. Keep the element before the scripts so `init()` can find it.
+- `restoreAudio()` retries keepalive playback and resumes suspended/interrupted Web Audio when the enabled, ongoing round returns to the foreground. Track context and keepalive errors independently; show playback failures with **Retry Audio** rather than hiding them.
+- Preserve the audio attempt counter so stale playback promises cannot report errors after reset or disabling the option.
+- Request a screen wake lock only for a visible, active round in a supported secure context. Retain it through pauses and between states; release it on finish, reset, disabling the option, hiding, or `pagehide`, and request again on return.
+- Preserve the pending-request guard and attempt counter. Release late/stale grants immediately; never report an already-released lock as active. System release/denial should show status and **Retry Screen Wake Lock**, not trigger a retry loop.
+- Wake-lock status is a normal-flow bottom-left footer below controls, with smaller text on phone layouts. Do not overlay timer digits or buttons.
+- Both features are best effort. Neither silent audio nor home-screen installation guarantees background execution, and screen wake lock cannot override manual device locking. Test actual Apple devices and Bluetooth speakers before claiming a hardware fix.
 
 ## Offline support and deployment
 
@@ -82,12 +95,15 @@ The rules that apply them are just below the state background rules in `style.cs
 - `getFirstLine(end)` — resolves starting-line order, including upcoming-end previews
 - `finishOrAdvance()` — shared button/Space action, gated by the simpler-controls setting
 - `playBuzzerSignal(repeatCount)` — generates dual-tone sawtooth buzzer
+- `updateAudioKeepAlive()` / `stopAudioKeepAlive()` / `restoreAudio()` — silent playback lifecycle and foreground recovery
+- `updateScreenWakeLock()` / `releaseScreenWakeLock()` — visible-round wake-lock lifecycle and asynchronous cleanup
 
 ## Validation
 
 - Run `node --test` for dependency-free timer and service worker regression tests (`script.test.js` and `offline.test.js`).
 - For offline changes, also check first-time download success/failure, offline reopening and refresh with a previously unseen settings URL, root and project-subdirectory hosting, and updates while a timer is running.
 - Test both control modes, prep/shoot/between states, paused/restarted behavior, and held Space keys when changing controls.
+- For audio/wake changes, cover opt-in behavior, URL/preset persistence, pause/between retention, finish/reset/disable cleanup, foreground recovery, denied requests, retries, and stale asynchronous results. Node tests use fake media, AudioContext, and wake-lock APIs; also check real browser playback and wake-lock support, including offline silent audio.
 - Service worker caches can hide local edits. For development, unregister the local worker and clear its app cache, or use a separate origin such as `127.0.0.1` instead of `localhost`.
 
 ## Guidelines

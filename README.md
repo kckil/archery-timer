@@ -71,6 +71,7 @@ finish, reset, disabling the option, or leaving the page. Returning to the visib
 timer requests a new lock if the round is still in progress.
 
 The timer displays whether the screen is kept awake or the request was refused.
+The status appears at the bottom-left below the controls, with smaller text on phones.
 Use **Retry Screen Wake Lock** if the system releases or denies it. HTTPS (or
 localhost) and a supporting browser are required; battery/power-saving settings
 can prevent the lock. This prevents automatic screen sleep only while the page
@@ -93,7 +94,8 @@ does not grant native-app background privileges.
 *   **`manifest.webmanifest`** and **`icons/`**: Home-screen installation metadata and local app icons.
 *   **`offline.js`**: Registers the service worker and displays offline readiness, setup errors, and available updates.
 *   **`sw.js`**: Precaches app files and serves them offline, including URLs with custom settings.
-*   **`script.test.js`** and **`offline.test.js`**: Dependency-free Node.js regression tests for timer behavior and offline support.
+*   **`audio/silence.wav`**: Local silent loop for the optional Apple audio workaround, also available offline.
+*   **`script.test.js`** and **`offline.test.js`**: Dependency-free Node.js regression tests for timer behavior, controls, audio recovery, screen wake locks, and offline support.
 *   **`CLAUDE.md`**: Implementation guidance for coding agents.
 
 ## 🛠️ Development Guide
@@ -106,6 +108,8 @@ does not grant native-app background privileges.
 *   **Audio**: `playBuzzerSignal` in `script.js` generates the dual-tone sounds.
 *   **Line Order**: `getFirstLine(end)` determines which line starts an end.
 *   **Combined Control**: `finishOrAdvance` selects the action shared by the primary button and Space shortcut.
+*   **Audio Keepalive**: `updateAudioKeepAlive`, `stopAudioKeepAlive`, and `restoreAudio` manage silent playback and foreground recovery.
+*   **Screen Wake Lock**: `updateScreenWakeLock` and `releaseScreenWakeLock` manage visible-round requests and cleanup.
 
 ### Making Changes
 
@@ -125,6 +129,9 @@ node --test
 For visual changes, check desktop (1280x900), phone portrait (390x844), and phone
 landscape (926x428) in both themes. The Node.js tests do not replace browser checks
 for layout, audio, service worker installation, or offline reopening.
+For audio and wake-lock changes, also check real browser permission failures,
+retry actions, foreground recovery, and cleanup on finish/reset. Test Bluetooth
+behavior on the actual Apple device and speaker; simulated APIs cannot verify it.
 
 ## Round settings and controls
 
@@ -173,6 +180,8 @@ All settings are saved in the URL query string. This allows users to bookmark th
 |---|---|---|
 | Alternate Line Order | `alternateLines=true` or `alternateLines=false` | `true` |
 | Simpler Keyboard Controls | `simplerKeyboardControls=true` or `simplerKeyboardControls=false` | `false` |
+| Optimize Audio for Apple Devices | `optimizeAppleAudio=true` or `optimizeAppleAudio=false` | `false` |
+| Keep Screen Awake | `keepScreenAwake=true` or `keepScreenAwake=false` | `false` |
 
 Explicit values in bookmarked URLs override these defaults.
 
