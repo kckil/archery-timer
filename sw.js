@@ -1,7 +1,7 @@
 const APP_ROOT = new URL('./', self.location.href);
 const CACHE_PREFIX = `archery-timer:${APP_ROOT.pathname}:`;
 // Bump this version whenever a precached file changes.
-const CACHE_NAME = `${CACHE_PREFIX}v4`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 const ASSET_URLS = [
     'index.html',
     'style.css',
